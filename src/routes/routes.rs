@@ -24,7 +24,10 @@ async fn main() {
     dotenv::dotenv().ok();
     load_env.expect("Failed to load env");
 
-    let pool = create_pool().await.expect("Failed to connect to DB");
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL not found!")
+
+    let pool = pgPool::connect(&database_url).await?;
+
     tracing_subscriber::fmt::init();
 
     let app = Router::new()
