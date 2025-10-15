@@ -13,7 +13,7 @@ pub struct Creator {
 }
 
 impl Creator {
-    pub fn new (username: &str, wallet: &str) -> Self {
+    pub fn new (username: &str, email: &str, wallet: &str) -> Self {
         Self {
             id: 0,
             username: username.to_string(),
