@@ -1,16 +1,17 @@
 use serde::{Deserialize, Serialize};
-use chrono::{DataTime, Utc};
+use sqlx::FromRow;
 
-#[derive(Serialize, Deserialize, Debug, sqlx::FromRow)]
+#[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Creator {
     pub id: i32,
     pub username: String,
     pub display_name: String,
-    pub email: String;
-    pub wallet_pubkey: String,
-    pub socials: Option<serde<_json::Value>,  // Json array of links
-    pub created_at: DateTime<Utc>,
+    pub bio: Option<String>,
+    pub profile_image: Option<String>,
+    pub wallet_address: Option<String>,
+    pub created_at: chrono::NaiveDateTime,
 }
+
 
 impl Creator {
     pub fn new (username: &str, email: &str, wallet: &str) -> Self {

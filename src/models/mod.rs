@@ -1,5 +1,4 @@
-pub mod creator;
-pub mod tip;
+pub mod creators;
+pub mod tips;
 
-pub use creator::creator;
-pub use tip::tip
+use crate::models::creator::Creator;
