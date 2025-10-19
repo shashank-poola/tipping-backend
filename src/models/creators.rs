@@ -6,6 +6,7 @@ pub struct Creator {
     pub id: i32,
     pub username: String,
     pub display_name: String,
+    pub email: String,
     pub bio: Option<String>,
     pub profile_image: Option<String>,
     pub wallet_address: Option<String>,
@@ -18,10 +19,9 @@ impl Creator {
         Self {
             id: 0,
             username: username.to_string(),
-            display_name: None,
+            display_name: String,
             email: None,
-            wallet_pubkey: wallet.to_string(),
-            socials: None,
+            wallet_address: wallet.to_string(),
             created_at: Utc::now(),
         }
     }

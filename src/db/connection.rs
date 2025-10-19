@@ -1,9 +1,15 @@
-use sqlx::{pgPool, postgres::PgPoolOptions};
+use sqlx::postgres::PgPoolOptions;
+use std::env;
 
-pub async fn create_pool() -> Results<PgPool, sqlx::Error> {
-    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL is not set")
-    PgPoolOption::new()
-        .max_connections(10)
+#[tokio::main]
+async fn main() -> Result<(), sqlx::Error> {
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
         .connect(&database_url)
-        .await()
+        .await?;
+
+    println!("Connected to PostgreSQL successfully!");
+    Ok(())
 }
