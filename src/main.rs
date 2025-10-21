@@ -11,27 +11,28 @@ use chrono::Utc;
 use serde_json::json;
 use sqlx::PgPool;
 use tower_http::cors::CorsLayer;
-use routes::{creators, tips, webhooks};
 
 mod config;
 mod utils;
 mod db;
 mod models;
-mod routes {
+pub mod routes {
     pub mod creators;
     pub mod tips;
+    pub mod wallet;
+    pub mod webhooks;
 }
+use routes::{creators, tips, wallet, webhooks};
 
-#[tokio::main] 
+#[tokio::main]
 async fn main() {
     dotenv::dotenv().ok();
-    .expect("Failed to load env");
 
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL not found!");
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL not found!");
 
     let pool = PgPool::connect(&database_url)
-               .await
-               .expect("Failed to connect to DB");
+        .await
+        .expect("Failed to connect to DB");
 
     // Run migrations
     sqlx::migrate!("./migrations")
@@ -39,7 +40,7 @@ async fn main() {
         .await
         .expect("Failed to run database migrations");
 
-        let cors = CorsLayer::new()
+    let cors = CorsLayer::new()
         .allow_origin(HeaderValue::from_static("http://localhost:3000"))
         .allow_methods([Method::GET, Method::POST, Method::DELETE, Method::PUT])
         .allow_headers([AUTHORIZATION, CONTENT_TYPE, ACCEPT])
@@ -48,31 +49,26 @@ async fn main() {
     tracing_subscriber::fmt::init();
 
     let app = Router::new()
-    .route("/health", get(health))
-
-    .route("/creators", post(create_creatorr).get(list_creators))
-    .route("/username/:username/available", get(check_username))
-    .route("/wallet/link", post(creators::link_wallet))
-    .route("/creator/:id", get(get_creators).put(update_creator).delete(creators::delete_creator))
-
-    .route("/tips", post(create_tip))
-    .route("/t/confirm", post(tips::confirm_tip))
-    .route("/t/:username", get(tips::get_tips))
-    .route("/webhooks/tip", post(webhooks::handle_tip_webhook))
-
-    .layer(cors)
-    .layer(Extension<PgPool>);
-
+        .route("/health", get(health))
+        .route("/creators", post(creators::create_creator).get(creators::list_creators))
+        .route("/username/:username/available", get(creators::check_username))
+        .route("/wallet/link", post(wallet::link_wallet))
+        .route("/creator/:id", get(creators::get_creator).put(creators::update_creator).delete(creators::delete_creator))
+        .route("/tips", post(tips::create_tip))
+        .route("/tips/creator/:creator_id", get(tips::get_tips_for_creator))
+        .route("/tips/recent", get(tips::get_recent_tips))
+        .route("/webhooks/tip", post(webhooks::handle_tip_webhook))
+        .layer(cors)
+        .layer(Extension(pool));
 
     let addr = std::net::SocketAddr::from(([127, 0, 0, 1], 3000));
 
     tracing::info!("Server running on {}", addr);
 
-    axum::Server::bind(&addr) 
+    axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
         .unwrap();
-
 }
 
 async fn health(Extension(pool): Extension<PgPool>) -> Json<serde_json::Value> {

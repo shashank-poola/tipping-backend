@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::utils::response::ApiResponse;
-use crate::models::creator::Creator;
+use crate::models::creators::Creator;
 
 #[derive(Deserialize)]
 pub struct CreateCreatorInput {
@@ -16,7 +16,7 @@ pub struct CreateCreatorInput {
     pub email: String,
     pub bio: Option<String>,
     pub profile_image: Option<String>,
-    pub wallet_address: String,
+    pub wallet_address: Option<String>,
 }
 
 // CREATE a new creator
@@ -29,14 +29,12 @@ pub async fn create_creator(
         .fetch_one(&pool)
         .await
         .unwrap_or(0);
-
     if username_exists > 0 {
         return (
             StatusCode::BAD_REQUEST,
             Json(ApiResponse::error("Username already exists".to_string())),
         );
     }
-
     let result = sqlx::query!(
         "INSERT INTO creators (username, display_name, email, bio, profile_image, wallet_address)
          VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
@@ -49,7 +47,6 @@ pub async fn create_creator(
     )
     .fetch_one(&pool)
     .await;
-
     match result {
         Ok(record) => (
             StatusCode::CREATED,
@@ -69,7 +66,6 @@ pub async fn list_creators(
     let result = sqlx::query_as::<_, Creator>("SELECT * FROM creators")
         .fetch_all(&pool)
         .await;
-
     match result {
         Ok(creators) => (
             StatusCode::OK,
@@ -91,7 +87,6 @@ pub async fn get_creator(
         .bind(id)
         .fetch_one(&pool)
         .await;
-
     match result {
         Ok(creator) => (
             StatusCode::OK,
@@ -114,15 +109,13 @@ pub async fn check_username(
         .fetch_one(&pool)
         .await
         .unwrap_or(0);
-
     let available = exists == 0;
     (
         StatusCode::OK,
-        Json(ApiResponse::success(json!({ "available": available }))),
+        Json(ApiResponse::success(json!({ "available": available })))
     )
 }
 
-// UPDATE creator
 #[derive(Deserialize)]
 pub struct UpdateCreatorInput {
     pub display_name: Option<String>,
@@ -138,13 +131,13 @@ pub async fn update_creator(
     Json(payload): Json<UpdateCreatorInput>,
 ) -> (StatusCode, Json<ApiResponse<serde_json::Value>>) {
     let result = sqlx::query!(
-        "UPDATE creators
-         SET display_name = COALESCE($1, display_name),
-             email = COALESCE($2, email),
-             bio = COALESCE($3, bio),
-             profile_image = COALESCE($4, profile_image),
-             wallet_address = COALESCE($5, wallet_address)
-         WHERE id = $6",
+        "UPDATE creators SET
+        display_name = COALESCE($1, display_name),
+        email = COALESCE($2, email),
+        bio = COALESCE($3, bio),
+        profile_image = COALESCE($4, profile_image),
+        wallet_address = COALESCE($5, wallet_address)
+        WHERE id = $6",
         payload.display_name,
         payload.email,
         payload.bio,
@@ -154,7 +147,6 @@ pub async fn update_creator(
     )
     .execute(&pool)
     .await;
-
     match result {
         Ok(_) => (
             StatusCode::OK,
@@ -172,45 +164,12 @@ pub async fn delete_creator(
     Extension(pool): Extension<PgPool>,
     Path(id): Path<i32>,
 ) -> (StatusCode, Json<ApiResponse<serde_json::Value>>) {
-    let result = sqlx::query!("DELETE FROM creators WHERE id = $1", id)
-        .execute(&pool)
-        .await;
-
+    let result = sqlx::query!("DELETE FROM creators WHERE id = $1", id).
+        execute(&pool).await;
     match result {
         Ok(_) => (
             StatusCode::OK,
             Json(ApiResponse::success(json!({ "deleted": true }))),
-        ),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ApiResponse::error(e.to_string())),
-        ),
-    }
-}
-
-// LINK WALLET
-#[derive(Deserialize)]
-pub struct LinkWalletInput {
-    pub wallet_address: String,
-    pub creator_id: i32,
-}
-
-pub async fn link_wallet(
-    Extension(pool): Extension<PgPool>,
-    Json(payload): Json<LinkWalletInput>,
-) -> (StatusCode, Json<ApiResponse<serde_json::Value>>) {
-    let result = sqlx::query!(
-        "UPDATE creators SET wallet_address = $1 WHERE id = $2",
-        payload.wallet_address,
-        payload.creator_id
-    )
-    .execute(&pool)
-    .await;
-
-    match result {
-        Ok(_) => (
-            StatusCode::OK,
-            Json(ApiResponse::success(json!({ "wallet_linked": true }))),
         ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
