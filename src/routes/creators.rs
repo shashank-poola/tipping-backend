@@ -3,7 +3,7 @@ use axum::{
     http::StatusCode,
 };
 use sqlx::PgPool;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize};
 use serde_json::json;
 
 use crate::utils::response::ApiResponse;

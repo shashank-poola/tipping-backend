@@ -1,7 +1,6 @@
-use std::env;
 use axum::{
     extract::Extension,
-    routing::{get, post, put, delete},
+    routing::{get, post},
     response::Json,
     Router,
 };
@@ -65,7 +64,7 @@ async fn main() {
 
     tracing::info!("Server running on {}", addr);
 
-    axum::Server::bind(&addr)
+    tokio::net::windows::named_pipe::PipeEnd::bind(&addr)
         .serve(app.into_make_service())
         .await
         .unwrap();

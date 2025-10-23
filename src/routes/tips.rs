@@ -12,8 +12,8 @@ use crate::utils::response::ApiResponse;
 #[derive(Deserialize)]
 pub struct CreateTipInput {
     pub creator_id: i32,
-    pub sender_wallet: String,
-    pub amount: f64,
+    pub tipper_wallet: String,
+    pub tip_amount: f64,
     pub message: Option<String>,
     pub signature: String,
 }
@@ -22,8 +22,8 @@ pub struct CreateTipInput {
 pub struct Tip {
     pub id: i32,
     pub creator_id: i32,
-    pub sender_wallet: String,
-    pub amount: f64,
+    pub tipper_wallet: String,
+    pub tip_amount: f64,
     pub message: Option<String>,
     pub signature: String,
     pub created_at: NaiveDateTime,
@@ -49,11 +49,11 @@ pub async fn create_tip(
     }
 
     let result = sqlx::query!(
-        "INSERT INTO tips (creator_id, sender_wallet, amount, message, signature) \
+        "INSERT INTO tips (creator_id, tipper_wallet, tip_amount, message, signature) \
         VALUES ($1, $2, $3, $4, $5) RETURNING id",
         payload.creator_id,
-        payload.sender_wallet,
-        payload.amount,
+        payload.tipper_wallet,
+        payload.tip_amount,
         payload.message,
         payload.signature
     )
