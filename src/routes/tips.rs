@@ -15,7 +15,7 @@ pub struct CreateTipInput {
     pub tipper_wallet: String,
     pub tip_amount: f64,
     pub message: Option<String>,
-    pub signature: String,
+    pub transaction_signature: String,
 }
 
 #[derive(Deserialize, Serialize, sqlx::FromRow, Debug)]
@@ -25,7 +25,7 @@ pub struct Tip {
     pub tipper_wallet: String,
     pub tip_amount: f64,
     pub message: Option<String>,
-    pub signature: String,
+    pub transaction_signature: String,
     pub created_at: NaiveDateTime,
 }
 
@@ -34,9 +34,9 @@ pub async fn create_tip(
     Json(payload): Json<CreateTipInput>,
 ) -> (StatusCode, Json<ApiResponse<serde_json::Value>>) {
     let existing = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM tips WHERE signature = $1"
+        "SELECT COUNT(*) FROM tips WHERE transaction_signature = $1"
     )
-    .bind(&payload.signature)
+    .bind(&payload.transaction_signature)
     .fetch_one(&pool)
     .await
     .unwrap_or(0);
@@ -49,13 +49,13 @@ pub async fn create_tip(
     }
 
     let result = sqlx::query!(
-        "INSERT INTO tips (creator_id, tipper_wallet, tip_amount, message, signature) \
+        "INSERT INTO tips (creator_id, tipper_wallet, tip_amount, message, transaction_signature) \
         VALUES ($1, $2, $3, $4, $5) RETURNING id",
         payload.creator_id,
         payload.tipper_wallet,
-        payload.tip_amount,
+        payload.tip_amount as f64,
         payload.message,
-        payload.signature
+        payload.transaction_signature
     )
     .fetch_one(&pool)
     .await;

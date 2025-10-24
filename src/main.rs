@@ -50,11 +50,11 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(health))
         .route("/creators", post(creators::create_creator).get(creators::list_creators))
-        .route("/username/:username/available", get(creators::check_username))
+        .route("/username/{username}/available", get(creators::check_username))
         .route("/wallet/link", post(wallet::link_wallet))
-        .route("/creator/:id", get(creators::get_creator).put(creators::update_creator).delete(creators::delete_creator))
+        .route("/creator/{id}", get(creators::get_creator).put(creators::update_creator).delete(creators::delete_creator))
         .route("/tips", post(tips::create_tip))
-        .route("/tips/creator/:creator_id", get(tips::get_tips_for_creator))
+        .route("/tips/creator/{creator_id}", get(tips::get_tips_for_creator))
         .route("/tips/recent", get(tips::get_recent_tips))
         .route("/webhooks/tip", post(webhooks::handle_tip_webhook))
         .layer(cors)
@@ -64,10 +64,8 @@ async fn main() {
 
     tracing::info!("Server running on {}", addr);
 
-    tokio::net::windows::named_pipe::PipeEnd::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
 
 async fn health(Extension(pool): Extension<PgPool>) -> Json<serde_json::Value> {
